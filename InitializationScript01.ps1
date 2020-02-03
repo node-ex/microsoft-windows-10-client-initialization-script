@@ -14,7 +14,7 @@ function setExecutionPolicy {
 }
 
 function initializePowerShellProfile {
-  $PSProfileDirectory = 'C:\Users\nodex\Documents\WindowsPowerShell'
+  $PSProfileDirectory = Join-Path -Path $HOME -ChildPath 'Documents\WindowsPowerShell'
   $PSProfileFile = Join-Path -Path $PSProfileDirectory -ChildPath 'profile.ps1'
 
   if (Test-Path $PSProfileDirectory) {
@@ -81,8 +81,8 @@ function enableWindowsContainerization {
 }
 
 function enableDeveloperMode {
-  Set-ItemProperty -path 'HKLM:\SOFTWARE\Microsoft\Windows\CurrentVersion\AppModelUnlock' -Name 'AllowDevelopmentWithoutDevLicense' -Value '1'
-  Set-ItemProperty -path 'HKLM:\SOFTWARE\Microsoft\Windows\CurrentVersion\AppModelUnlock' -Name 'AllowAllTrustedApps' -Value '1'
+  Set-ItemProperty -Path 'HKLM:\SOFTWARE\Microsoft\Windows\CurrentVersion\AppModelUnlock' -Name 'AllowDevelopmentWithoutDevLicense' -Value '1'
+  Set-ItemProperty -Path 'HKLM:\SOFTWARE\Microsoft\Windows\CurrentVersion\AppModelUnlock' -Name 'AllowAllTrustedApps' -Value '1'
   Write-Host '>>> Enable Developer mode.'
 }
 
