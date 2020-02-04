@@ -41,32 +41,6 @@ function initializePowerShellProfile {
   }
 }
 
-function addWindowsCapabilitySsh {
-  # Make sure that the OpenSSH features are available for install
-  $clientCapabilityNameArray = Get-WindowsCapability -Online | Where-Object -Property Name -Like 'OpenSSH.Client*' | Select-Object -ExpandProperty Name
-  $serverCapabilityNameArray = Get-WindowsCapability -Online | Where-Object -Property Name -Like 'OpenSSH.Server*' | Select-Object -ExpandProperty Name
-
-  if ($clientCapabilityNameArray.length -gt 0) {
-    $clientCapabilityName = $clientCapabilityNameArray[0]
-    # Install the OpenSSH Client
-    Add-WindowsCapability -Online -Name $clientCapabilityName | Out-Null
-    $script:SSH_CLIENT_CAPABILITY_EXISTS = $true
-    Write-Host '>>> OpenSSH client capability has been enabled.'
-  } else {
-    Write-Host '>>> OpenSSH client capability does not exist.'
-  }
-
-  if ($serverCapabilityNameArray.length -gt 0) {
-    $serverCapabilityName = $serverCapabilityNameArray[0]
-    # Install the OpenSSH Server
-    Add-WindowsCapability -Online -Name $serverCapabilityName | Out-Null
-    $script:SSH_SERVER_CAPABILITY_EXISTS = $true
-    Write-Host '>>> OpenSSH server capability has been enabled.'
-  } else {
-    Write-Host '>>> OpenSSH server capability does not exist.'
-  }
-}
-
 function enableWindowsSubsystemForLinux {
   Enable-WindowsOptionalFeature -Online -FeatureName VirtualMachinePlatform -NoRestart -WarningAction SilentlyContinue | Out-Null
   Write-Host '>>> Virtual Machine Platform has been enabled.'
@@ -142,7 +116,6 @@ function announceSuccessNextSteps {
 function main {
   setExecutionPolicy
   initializePowerShellProfile
-  addWindowsCapabilitySsh
   enableWindowsSubsystemForLinux
   enableWindowsContainerization
   enableDeveloperMode
