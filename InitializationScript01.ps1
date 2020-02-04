@@ -68,6 +68,9 @@ function addWindowsCapabilitySsh {
 }
 
 function enableWindowsSubsystemForLinux {
+  Enable-WindowsOptionalFeature -Online -FeatureName VirtualMachinePlatform -NoRestart -WarningAction SilentlyContinue | Out-Null
+  Write-Host '>>> Virtual Machine Platform has been enabled.'
+
   Enable-WindowsOptionalFeature -Online -FeatureName Microsoft-Windows-Subsystem-Linux -NoRestart -WarningAction SilentlyContinue | Out-Null
   Write-Host '>>> Windows Subsystem for Linux (WSL) has been enabled.'
 }
