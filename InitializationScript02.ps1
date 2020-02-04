@@ -1,105 +1,49 @@
-$script:sshConfigurationDirectory = 'C:\ProgramData\ssh'
-$script:administratorsAuthorizedKeysFile = Join-Path -Path $script:sshConfigurationDirectory -ChildPath 'administrators_authorized_keys'
-$script:sshdConfigFile = Join-Path -Path $script:sshConfigurationDirectory -ChildPath 'sshd_config'
+$setupUbuntuSteps = @"
+  1. Open Start.
+  2. Search for the Linux distribution (for example, Ubuntu), click the top result to launch the experience.
+  3. Create a username for the Linux distro and press Enter.
+  4. Specify a password for the distro and press Enter.
+"@
 
 function installNugetProvider {
   Install-PackageProvider -Name NuGet -Force
   Write-Host '>>> NuGet Provider has been installed.'
 }
 
-function enableSshService {
-  # Enable sshd service
-  Start-Service sshd
-  Start-Service ssh-agent
-  # Start sshd service on startup
-  Set-Service -Name sshd -StartupType 'Automatic'
-  Set-Service -Name ssh-agent -StartupType 'Automatic'
+function installUbuntu {
+  $userDownloadsDirectory = Join-Path -Path $HOME -ChildPath 'Downloads'
+  $backupProgressPreference = $ProgressPreference
 
-  $firewallRuleArray =
-    Get-NetFirewallRule `
-      -DisplayGroup 'OpenSSH Server' `
-      -Direction 'Inbound' `
-      -Enabled $true.ToString()
+  $packageExists = $null -ne (Get-AppxPackage -AllUsers -Name 'CanonicalGroupLimited.Ubuntu*')
 
-  # Check whether returned value is not null and not an array => single existing rule
-  if ($null -eq $firewallRuleArray.length -and -not ($firewallRuleArray -is [array])) {
-    Write-Host '>>> SSH Firewall rule exists.'
-  }
+  if (-not $packageExists) {
+    $ProgressPreference = 'SilentlyContinue'
+    Push-Location
 
-  # TODO: Handle other cases
-}
+    Set-Location -Path $userDownloadsDirectory
+    Invoke-WebRequest -Uri https://aka.ms/wsl-ubuntu-1804 -OutFile Ubuntu-1804.appx -UseBasicParsing
+    Add-AppxPackage .\Ubuntu-1804.appx
+    Remove-Item -Path .\Ubuntu-1804.appx
 
-function configureSshAuthentication {
-  if (-not (Test-Path $script:sshConfigurationDirectory)) {
-    New-Item -Path $script:sshConfigurationDirectory -ItemType Directory -Force
-    Write-Host '>>> SSH configuration directory has been created.'
+    Pop-Location
+    $ProgressPreference = $backupProgressPreference
+
+    Write-Host '>>> Ubuntu has been installed.'
   } else {
-    Write-Host '>>> SSH configuration directory exists.'
+    Write-Host '>>> Ubuntu is already installed.'
   }
-
-  if (-not (Test-Path $script:administratorsAuthorizedKeysFile)) {
-    New-Item -Path $script:administratorsAuthorizedKeysFile -ItemType File -Force
-    Write-Host '>>> administrators_authorized_keys file has been created.'
-  } else {
-    Write-Host '>>> administrators_authorized_keys file exists.'
-  }
-
-  # Set ACL for public key authentication
-  $acl = Get-Acl $script:administratorsAuthorizedKeysFile
-  $acl.SetAccessRuleProtection($true, $false)
-  $administratorsRule = New-Object System.Security.AccessControl.FileSystemAccessRule('Administrators', 'FullControl', 'Allow')
-  $systemRule = New-Object System.Security.AccessControl.FileSystemAccessRule('SYSTEM', 'FullControl', 'Allow')
-  $acl.SetAccessRule($administratorsRule)
-  $acl.SetAccessRule($systemRule)
-  $acl | Set-Acl
-  Write-Host '>>> ACL rules for administrators_authorized_keys file have been set.'
-
-  # TODO: Wait for the signature correction for versions >= 1.0.0.1
-  Install-Module -Force OpenSSHUtils -Scope AllUsers -RequiredVersion 0.0.2.0
-
-  (Get-Content $script:sshdConfigFile) -replace '^[ #]*PasswordAuthentication.*', 'PasswordAuthentication no' | Set-Content $script:sshdConfigFile
-  (Get-Content $script:sshdConfigFile) -replace '^[ #]*PubkeyAuthentication.*', 'PubkeyAuthentication yes' | Set-Content $script:sshdConfigFile
-  Write-Host '>>> sshd_config has been modified.'
-
-  Restart-Service sshd
-  Restart-Service ssh-agent
-
-  Write-Host '>>> SSH authentication has been configured.'
-}
-
-function setupSshKeys {
-  $userSshDirectory = Join-Path -Path $HOME -ChildPath '/.ssh'
-  $privateSshKeyFile = Join-Path -Path $userSshDirectory -ChildPath '/id_rsa'
-
-  if (-not (Test-Path $userSshDirectory)) {
-    New-Item -Path $userSshDirectory -ItemType Directory -Force
-    Write-Host '>>> Users .ssh directory has been created.'
-  } else {
-    Write-Host '>>> Users .ssh directory exists.'
-  }
-
-  ssh-keygen -t rsa -b 4096 -C 'pavel.balashov1@gmail.com' -f $privateSshKeyFile -N [string]::Empty
-  ssh-add $privateSshKeyFile
-
-  Restart-Service sshd
-  Restart-Service ssh-agent
-
-  Write-Host '>>> SSH keys have been configured.'
 }
 
 function announceSuccessNextSteps {
   Write-Host '>>> Script has finished running.'
   Write-Host '>>> Next steps:'
-  Write-Host ('>>> 1. Add appropriate public keys to ' + $script:administratorsAuthorizedKeysFile)
-  Write-Host '>>> 4. Restart PC'
-  Write-Host '>>> 5. Run the next script'
+  Write-Host '>>> 1. Setup Ubuntu'
+  Write-Host $setupUbuntuSteps
 }
 
 function main {
   installNugetProvider
-  enableSshService
-  configureSshAuthentication
-  setupSshKeys
+  installUbuntu
   announceSuccessNextSteps
 }
 

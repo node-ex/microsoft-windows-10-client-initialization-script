@@ -1,5 +1,8 @@
 $installedPrograms = Get-ItemProperty 'HKLM:\Software\Wow6432Node\Microsoft\Windows\CurrentVersion\Uninstall\*'
 $installedProgramsChocolatey = $null
+$sshConfigurationDirectory = 'C:\ProgramData\ssh'
+$administratorsAuthorizedKeysFile = Join-Path -Path $sshConfigurationDirectory -ChildPath 'administrators_authorized_keys'
+$sshdConfigFile = Join-Path -Path $sshConfigurationDirectory -ChildPath 'sshd_config'
 
 function addWindowsCapabilitySsh {
   # Make sure that the OpenSSH features are available for install
@@ -25,6 +28,86 @@ function addWindowsCapabilitySsh {
   } else {
     Write-Host '>>> OpenSSH server capability does not exist.'
   }
+}
+
+function enableSshService {
+  # Enable sshd service
+  Start-Service sshd
+  Start-Service ssh-agent
+  # Start sshd service on startup
+  Set-Service -Name sshd -StartupType 'Automatic'
+  Set-Service -Name ssh-agent -StartupType 'Automatic'
+
+  $firewallRuleArray =
+    Get-NetFirewallRule `
+      -DisplayGroup 'OpenSSH Server' `
+      -Direction 'Inbound' `
+      -Enabled $true.ToString()
+
+  # Check whether returned value is not null and not an array => single existing rule
+  if ($null -ne $firewallRuleArray -and -not ($firewallRuleArray -is [array])) {
+    Write-Host '>>> SSH Firewall rule exists.'
+  }
+
+  # TODO: Handle other cases
+}
+
+function configureSshAuthentication {
+  if (-not (Test-Path $sshConfigurationDirectory)) {
+    New-Item -Path $sshConfigurationDirectory -ItemType Directory -Force | Out-Null
+    Write-Host '>>> SSH configuration directory has been created.'
+  } else {
+    Write-Host '>>> SSH configuration directory exists.'
+  }
+
+  if (-not (Test-Path $administratorsAuthorizedKeysFile)) {
+    New-Item -Path $administratorsAuthorizedKeysFile -ItemType File -Force | Out-Null
+    Write-Host '>>> administrators_authorized_keys file has been created.'
+  } else {
+    Write-Host '>>> administrators_authorized_keys file exists.'
+  }
+
+  # Set ACL for public key authentication
+  $acl = Get-Acl $administratorsAuthorizedKeysFile
+  $acl.SetAccessRuleProtection($true, $false)
+  $administratorsRule = New-Object System.Security.AccessControl.FileSystemAccessRule('Administrators', 'FullControl', 'Allow')
+  $systemRule = New-Object System.Security.AccessControl.FileSystemAccessRule('SYSTEM', 'FullControl', 'Allow')
+  $acl.SetAccessRule($administratorsRule)
+  $acl.SetAccessRule($systemRule)
+  $acl | Set-Acl
+  Write-Host '>>> ACL rules for administrators_authorized_keys file have been set.'
+
+  # TODO: Wait for the signature correction for versions >= 1.0.0.1
+  Install-Module -Force OpenSSHUtils -Scope AllUsers -RequiredVersion 0.0.2.0
+
+  (Get-Content $sshdConfigFile) -replace '^[ #]*PasswordAuthentication.*', 'PasswordAuthentication no' | Set-Content $sshdConfigFile
+  (Get-Content $sshdConfigFile) -replace '^[ #]*PubkeyAuthentication.*', 'PubkeyAuthentication yes' | Set-Content $sshdConfigFile
+  Write-Host '>>> sshd_config has been modified.'
+
+  Restart-Service sshd
+  Restart-Service ssh-agent
+
+  Write-Host '>>> SSH authentication has been configured.'
+}
+
+function setupSshKeys {
+  $userSshDirectory = Join-Path -Path $HOME -ChildPath '/.ssh'
+  $privateSshKeyFile = Join-Path -Path $userSshDirectory -ChildPath '/id_rsa'
+
+  if (-not (Test-Path $userSshDirectory)) {
+    New-Item -Path $userSshDirectory -ItemType Directory -Force | Out-Null
+    Write-Host '>>> Users .ssh directory has been created.'
+  } else {
+    Write-Host '>>> Users .ssh directory exists.'
+  }
+
+  ssh-keygen -t rsa -b 4096 -C 'pavel.balashov1@gmail.com' -f $privateSshKeyFile -q -N """"
+  ssh-add $privateSshKeyFile
+
+  Restart-Service sshd
+  Restart-Service ssh-agent
+
+  Write-Host '>>> SSH keys have been configured.'
 }
 
 function installChocolatey {
