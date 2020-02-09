@@ -1,3 +1,6 @@
+$script:SSH_CLIENT_CAPABILITY_EXISTS = $false
+$script:SSH_SERVER_CAPABILITY_EXISTS = $false
+
 $installedPrograms = Get-ItemProperty 'HKLM:\Software\Wow6432Node\Microsoft\Windows\CurrentVersion\Uninstall\*'
 $installedProgramsChocolatey = $null
 $sshConfigurationDirectory = 'C:\ProgramData\ssh'
