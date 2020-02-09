@@ -4,8 +4,6 @@ $ACTIVATE_READLINE_STATEMENT = @"
 Set-PSReadlineKeyHandler -Key Tab -Function Complete
 
 "@
-$script:SSH_CLIENT_CAPABILITY_EXISTS = $false
-$script:SSH_SERVER_CAPABILITY_EXISTS = $false
 
 function setExecutionPolicy {
   Set-ExecutionPolicy -ExecutionPolicy RemoteSigned -Scope LocalMachine
@@ -39,6 +37,22 @@ function initializePowerShellProfile {
   } else {
     Write-Host '>>> Statement for readline activation exists in PowerShell profile file.'
   }
+}
+
+function setupWindowsUpdate {
+  $windowsUpdateRegistryPath = 'HKLM:\SOFTWARE\Policies\Microsoft\Windows\WindowsUpdate\AU'
+
+  if(-not (Test-Path $windowsUpdateRegistryPath)) {
+    New-Item -Path $windowsUpdateRegistryPath -Force
+  }
+
+  Set-ItemProperty -Path $windowsUpdateRegistryPath -Name 'NoAutoUpdate' -Value 0
+  Set-ItemProperty -Path $windowsUpdateRegistryPath -Name 'AUOptions' -Value 2
+  Set-ItemProperty -Path $windowsUpdateRegistryPath -Name 'ScheduledInstallDay' -Value 0
+  Set-ItemProperty -Path $windowsUpdateRegistryPath -Name 'ScheduledInstallEveryWeek' -Value 1
+  Set-ItemProperty -Path $windowsUpdateRegistryPath -Name 'ScheduledInstallTime' -Value 3
+  Set-ItemProperty -Path $windowsUpdateRegistryPath -Name 'NoAUAsDefaultShutdownOption' -Value 1
+  Set-ItemProperty -Path $windowsUpdateRegistryPath -Name 'NoAUShutdownOption' -Value 1
 }
 
 function enableWindowsSubsystemForLinux {
@@ -116,6 +130,7 @@ function announceSuccessNextSteps {
 function main {
   setExecutionPolicy
   initializePowerShellProfile
+  setupWindowsUpdate
   enableWindowsSubsystemForLinux
   enableWindowsContainerization
   enableDeveloperMode
