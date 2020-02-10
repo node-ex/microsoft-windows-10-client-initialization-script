@@ -123,8 +123,9 @@ function announceSuccessNextSteps {
   Write-Host '>>> 1. Manually uninstall unnecessary programs'
   Write-Host '>>> 2. Manually remove unnecessary programs from Startup'
   Write-Host '>>> 3. Manually stop unnecessary Services'
-  Write-Host '>>> 4. Restart PC'
-  Write-Host '>>> 5. Run the next script'
+  Write-Host '>>> 4. Install all available Windows Updates'
+  Write-Host '>>> 5. Restart PC'
+  Write-Host '>>> 6. Run the next script'
 }
 
 function main {
