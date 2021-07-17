@@ -67,8 +67,8 @@ function enableWindowsContainerization {
   Enable-WindowsOptionalFeature -Online -FeatureName Microsoft-Hyper-V -All -NoRestart -WarningAction SilentlyContinue | Out-Null
   Write-Host '>>> Hyper-V feature has been enabled.'
 
-  Enable-WindowsOptionalFeature -Online -FeatureName Containers -All -NoRestart -WarningAction SilentlyContinue | Out-Null
-  Write-Host '>>> Containers feature has been enabled.'
+  # Enable-WindowsOptionalFeature -Online -FeatureName Containers -All -NoRestart -WarningAction SilentlyContinue | Out-Null
+  # Write-Host '>>> Containers feature has been enabled.'
 }
 
 function enableDeveloperMode {
