@@ -21,9 +21,9 @@ function installUbuntu {
     Push-Location
 
     Set-Location -Path $userDownloadsDirectory
-    Invoke-WebRequest -Uri https://aka.ms/wsl-ubuntu-1804 -OutFile Ubuntu-1804.appx -UseBasicParsing
-    Add-AppxPackage .\Ubuntu-1804.appx
-    Remove-Item -Path .\Ubuntu-1804.appx
+    Invoke-WebRequest -Uri https://aka.ms/wslubuntu2004 -OutFile Ubuntu.appx -UseBasicParsing
+    Add-AppxPackage .\Ubuntu.appx
+    Remove-Item -Path .\Ubuntu.appx
 
     Pop-Location
     $ProgressPreference = $backupProgressPreference
